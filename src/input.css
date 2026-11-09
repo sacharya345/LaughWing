@@ -451,38 +451,28 @@ a {
   aspect-ratio: 0.94;
   overflow: hidden;
   border-radius: 1.65rem;
-  background:
-    radial-gradient(ellipse at 50% 50%, rgba(255, 212, 59, 0.38), transparent 58%),
-    linear-gradient(145deg, #ffd977, #d58936 48%, #663728);
+  background: #f3f6f7;
 }
 
 .hero-photo img {
   position: absolute;
   inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transform: scale(1.02);
+  padding: 0.75rem;
+  object-fit: contain;
+  object-position: center;
   opacity: 1;
   transition: opacity 220ms ease, transform 500ms ease;
 }
 
 .hero-visual:hover .hero-photo img {
-  transform: scale(1.07);
+  transform: scale(1.02);
 }
 
 .hero-photo img.is-transitioning {
   opacity: 0.2;
-}
-
-.hero-photo img.menu-photo-contain {
-  padding: 1.5rem;
-  object-fit: contain;
-  background: linear-gradient(145deg, #fffdf7, #f3f6f7);
-}
-
-.hero-photo img.hero-photo-sausage {
-  object-position: center 72%;
 }
 
 .hero-photo-placeholder {
@@ -786,16 +776,17 @@ a {
   overflow: hidden;
   place-items: center;
   border-radius: 0.9rem;
-  background: #fff3cc;
+  background: #f3f6f7;
   font-size: 4.5rem;
 }
 
 .menu-art-sausage {
-  background: linear-gradient(145deg, #34363c, #17191e);
+  isolation: isolate;
 }
 
-.menu-art-drink {
-  background: linear-gradient(145deg, #fffdf7, #f3f6f7);
+.menu-art-dry-laphing,
+.menu-photo.product-image-dry-laphing {
+  background: #fff;
 }
 
 .menu-photo {
@@ -805,21 +796,51 @@ a {
   width: 100%;
   height: 100%;
   border-radius: 0.9rem;
-  object-fit: cover;
-  transition: transform 250ms ease;
-}
-
-.menu-card:hover .menu-photo:not(.menu-photo-contain) {
-  transform: scale(1.035);
-}
-
-.menu-photo-contain {
+  padding: 0.35rem;
+  background: #f3f6f7;
   object-fit: contain;
-  padding: 0.5rem;
+  object-position: center;
 }
 
-.menu-photo-sausage {
-  object-position: center 72%;
+.menu-photo.product-image-laphing {
+  object-fit: cover;
+  object-position: center;
+}
+
+.product-image-laphing {
+  transform: rotate(180deg);
+}
+
+.product-image-chilly {
+  transform: rotate(90deg) scale(1.15);
+}
+
+.hero-photo img.product-image-chilly {
+  transform: rotate(90deg) scale(1.15);
+}
+
+.product-image-food {
+  padding: 0;
+  object-fit: cover;
+  object-position: center;
+}
+
+.product-image-sausage {
+  padding: 0;
+  object-fit: cover;
+  object-position: center 70%;
+}
+
+.hero-photo img.product-image-food {
+  padding: 0;
+}
+
+.hero-photo img.product-image-sausage {
+  padding: 0.75rem;
+}
+
+.cart-item-photo.product-image-food {
+  padding: 0;
 }
 
 .section-kicker,
@@ -832,6 +853,25 @@ a {
 
 .section-kicker {
   color: #1246a0;
+}
+
+.menu-love-badge {
+  border: 1px solid rgba(216, 158, 0, 0.18);
+  box-shadow: 0 0 0 rgba(255, 212, 59, 0);
+  transition: transform 200ms ease, box-shadow 220ms ease, background 220ms ease;
+}
+
+.menu-love-badge:hover {
+  transform: translateY(-2px);
+  background: #ffe16b;
+  box-shadow:
+    0 0 0 4px rgba(255, 212, 59, 0.14),
+    0 0.35rem 1.15rem rgba(216, 158, 0, 0.3);
+}
+
+.menu-love-badge:focus-visible {
+  outline: 3px solid rgba(18, 70, 160, 0.5);
+  outline-offset: 3px;
 }
 
 .reviews-section {
@@ -1099,24 +1139,20 @@ a {
   overflow: hidden;
   place-items: center;
   border-radius: 0.75rem;
-  background: #fff3cc;
+  background: #f3f6f7;
   font-size: 1.65rem;
 }
 
 .cart-item-photo {
   position: absolute;
   inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-}
-
-.cart-item-photo.menu-photo-contain {
-  padding: 0.25rem;
-}
-
-.cart-item-photo.menu-photo-sausage {
-  object-position: center 72%;
+  padding: 0.15rem;
+  background: #f3f6f7;
+  object-fit: contain;
+  object-position: center;
 }
 
 .admin-shell {

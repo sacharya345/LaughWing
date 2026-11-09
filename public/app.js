@@ -51,6 +51,19 @@ function subtotal() {
   return selectedProducts().reduce((sum, { product, quantity }) => sum + product.price * quantity, 0);
 }
 
+function productImageClass(product) {
+  if (product.name === "Chicken Laphing") {
+    return "product-image-food product-image-laphing";
+  }
+  if (product.name === "Chicken Chilly") {
+    return "product-image-food product-image-chilly";
+  }
+  if (product.name === "Chicken Sausage") {
+    return "product-image-sausage";
+  }
+  return "";
+}
+
 function renderFilters() {
   const categories = ["All", "Laphing", "Chicken", "Drinks"];
   filterContainer.innerHTML = categories.map((category) => `
@@ -73,26 +86,16 @@ function renderMenu() {
   menuGrid.innerHTML = visibleProducts.map((product) => {
     const isOrderable = product.isAvailable && product.price !== null && settings.storeOpen &&
       (settings.pickupEnabled || settings.deliveryEnabled);
-    const isChickenSausage = product.name === "Chicken Sausage";
-    const isDrink = product.category === "Drinks";
-    const imageClasses = [
-      "menu-photo",
-      isChickenSausage ? "menu-photo-sausage" : "",
-      isDrink ? "menu-photo-contain" : "",
-    ].filter(Boolean).join(" ");
+    const isSausage = product.name === "Chicken Sausage";
+    const isDryLaphing = product.name === "Dry Laphing";
     const artwork = product.imageUrl
-      ? `<img class="${imageClasses}" src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name)}">`
+      ? `<img class="menu-photo ${productImageClass(product)}${isDryLaphing ? " product-image-dry-laphing" : ""}" src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name)}">`
       : `<span aria-hidden="true">${escapeHtml(product.emoji)}</span>`;
-    const artClasses = [
-      "menu-art",
-      isChickenSausage ? "menu-art-sausage" : "",
-      isDrink ? "menu-art-drink" : "",
-    ].filter(Boolean).join(" ");
     const quantity = cart.get(product.id) || 0;
     return `
       <article class="col-12 col-sm-6 col-lg-4">
         <div class="menu-card h-full p-3">
-          <div class="${artClasses}">${artwork}</div>
+          <div class="menu-art${isDryLaphing ? " menu-art-dry-laphing" : ""}">${artwork}</div>
           <div class="menu-heading flex items-start justify-between gap-2 pt-3">
             <div>
               <p class="menu-category-badge mb-1">${escapeHtml(product.category)}</p>
@@ -120,8 +123,10 @@ function renderHeroSlide() {
   const product = heroProducts[activeHeroSlide];
   const hasImage = Boolean(product.imageUrl);
   heroImage.classList.add("is-transitioning");
-  heroImage.classList.toggle("menu-photo-contain", product.category === "Drinks");
-  heroImage.classList.toggle("hero-photo-sausage", product.name === "Chicken Sausage");
+  heroImage.classList.toggle("product-image-food", product.name === "Chicken Laphing" ||
+    product.name === "Chicken Chilly");
+  heroImage.classList.toggle("product-image-chilly", product.name === "Chicken Chilly");
+  heroImage.classList.toggle("product-image-sausage", product.name === "Chicken Sausage");
   heroImage.hidden = !hasImage;
   heroImage.alt = hasImage ? `${product.name}, featured on the Laugh-Wing menu` : "";
   document.querySelector("#hero-food-placeholder").textContent = hasImage ? "" : product.emoji;
@@ -238,9 +243,9 @@ function renderCart() {
   document.querySelector("#cart-items").innerHTML = lines.length
     ? lines.map(({ product, quantity: count }) => `
       <div class="cart-row flex items-center gap-3 py-3" data-cart-row="${product.id}">
-        <div class="cart-item-art ${product.category === "Drinks" ? "menu-art-drink" : ""} ${product.name === "Chicken Sausage" ? "menu-art-sausage" : ""}">
+        <div class="cart-item-art">
           ${product.imageUrl
-    ? `<img class="cart-item-photo ${product.category === "Drinks" ? "menu-photo-contain" : ""} ${product.name === "Chicken Sausage" ? "menu-photo-sausage" : ""}" src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name)}">`
+    ? `<img class="cart-item-photo ${productImageClass(product)}" src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name)}">`
     : `<span aria-hidden="true">${escapeHtml(product.emoji)}</span>`}
         </div>
         <div class="min-w-0 flex-1">
