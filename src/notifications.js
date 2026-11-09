@@ -20,7 +20,7 @@ function validateNotificationConfig() {
 
 function formatOrderMessage(order) {
   const itemLines = order.items
-    .map((item) => `${item.quantity} x ${item.product_name} — €${(item.unit_price_cents / 100).toFixed(2)}`)
+    .map((item) => `${item.quantity} x ${item.product_name}${item.spice_level ? ` (${item.spice_level})` : ""} — €${(item.unit_price_cents / 100).toFixed(2)}`)
     .join("\n");
   const fulfillment = order.fulfillment === "delivery"
     ? `Delivery to: ${order.delivery_address}`

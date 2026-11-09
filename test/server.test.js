@@ -5,7 +5,7 @@ process.env.ADMIN_PASSWORD ||= "test-password-long-enough";
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { normalizeProduct, normalizeReview, detectImageType, validEmail } = require("../server");
+const { normalizeProduct, normalizeReview, detectImageType, validEmail, validSpiceSelection } = require("../server");
 
 test("normalizes priced menu items into cents", () => {
   const result = normalizeProduct({
@@ -68,6 +68,19 @@ test("validates email addresses for trusted admin account creation", () => {
   assert.equal(validEmail("staff@example.com"), true);
   assert.equal(validEmail("not-an-email"), false);
   assert.equal(validEmail(`staff@${"a".repeat(250)}.com`), false);
+});
+
+test("requires a supported spice level only for the four eligible menu items", () => {
+  for (const productName of ["Dry Laphing", "Jhol Laphing", "Chicken Laphing", "Chicken Keema Noodles"]) {
+    for (const spiceLevel of ["Mild", "Medium", "Hot", "Extra hot"]) {
+      assert.equal(validSpiceSelection(productName, spiceLevel), true);
+    }
+    assert.equal(validSpiceSelection(productName, null), false);
+    assert.equal(validSpiceSelection(productName, "Very hot"), false);
+  }
+
+  assert.equal(validSpiceSelection("Chicken Chilly", null), true);
+  assert.equal(validSpiceSelection("Chicken Chilly", "Hot"), false);
 });
 
 test("normalizes customer reviews and defaults blank names to Anonymous", () => {

@@ -140,7 +140,7 @@ function renderOrders(orders) {
   table.innerHTML = orders.map((order) => {
     const contact = [order.customer_phone, order.customer_email].filter(Boolean).join("<br>");
     const itemList = order.items.map((item) =>
-      `${item.quantity} × ${escapeHtml(item.name)}`).join("<br>");
+      `${item.quantity} × ${escapeHtml(item.name)}${item.spiceLevel ? ` (${escapeHtml(item.spiceLevel)})` : ""}`).join("<br>");
     const created = new Date(order.created_at).toLocaleString();
     const notification = escapeHtml(order.notification_status);
     const retry = order.notification_status !== "sent" && order.notification_status !== "disabled"
@@ -233,6 +233,47 @@ function renderAdmins(admins) {
     : '<tr><td class="p-4 text-wing-ink/60" colspan="2">No admin accounts found.</td></tr>';
 }
 
+function renderAdminReviews(reviews) {
+  const list = document.querySelector("#admin-reviews-list");
+  list.innerHTML = reviews.length
+    ? reviews.map((review) => {
+      const date = new Date(review.createdAt);
+      const dateLabel = Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
+      return `
+        <article class="admin-review-card rounded-3 border p-3" data-review="${escapeHtml(review.id)}">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-baseline gap-2">
+                <strong>${escapeHtml(review.name)}</strong>
+                <time class="text-xs text-wing-ink/60" datetime="${escapeHtml(review.createdAt)}">${escapeHtml(dateLabel)}</time>
+              </div>
+              <p class="mb-1 mt-1 text-amber-600" aria-label="${escapeHtml(review.rating)} out of 5 stars">${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</p>
+              <p class="mb-0 whitespace-pre-wrap break-words">${escapeHtml(review.review)}</p>
+            </div>
+            <div class="flex shrink-0 gap-2">
+              <button class="btn ${review.adminLiked ? "btn-wing" : "btn-outline-wing"} btn-sm rounded-pill" type="button" data-review-like="${escapeHtml(review.id)}" aria-pressed="${review.adminLiked}">
+                ${review.adminLiked ? "👍 Liked" : "👍 Like"}
+              </button>
+              <button class="btn btn-outline-danger btn-sm rounded-pill" type="button" data-review-delete="${escapeHtml(review.id)}">Delete</button>
+            </div>
+          </div>
+          <form class="admin-review-response-form mt-3 grid gap-2" data-review-response="${escapeHtml(review.id)}">
+            <label class="form-label mb-0 text-sm font-bold">Public owner response
+              <textarea class="form-control mt-1 rounded-xl" name="response" rows="2" maxlength="1000" placeholder="Write a response shown on the website">${escapeHtml(review.adminResponse || "")}</textarea>
+            </label>
+            <div><button class="btn btn-outline-wing btn-sm rounded-pill px-3" type="submit">Save response</button></div>
+          </form>
+        </article>
+      `;
+    }).join("")
+    : '<p class="mb-0 py-4 text-center text-wing-ink/60">No customer reviews yet.</p>';
+}
+
+async function refreshAdminReviews() {
+  const result = await api("/api/admin/reviews");
+  renderAdminReviews(result.reviews);
+}
+
 function renderSettings(settings) {
   const form = document.querySelector("#settings-form");
   form.elements.storeOpen.checked = settings.storeOpen;
@@ -249,7 +290,7 @@ async function refreshDashboard(showMessage = false) {
   renderVisitors(result.visitorStats);
   renderAdmins(result.admins);
   renderNotificationCount(result.unreadNotifications);
-  await refreshNotifications();
+  await Promise.all([refreshNotifications(), refreshAdminReviews()]);
   if (showMessage) showToast("Everything's up to date.");
 }
 
@@ -332,6 +373,57 @@ document.querySelector("#mark-all-notifications-read").addEventListener("click",
   } finally {
     button.disabled = false;
   }
+});
+
+document.querySelector("#admin-reviews-list").addEventListener("click", async (event) => {
+  const likeButton = event.target.closest("[data-review-like]");
+  const deleteButton = event.target.closest("[data-review-delete]");
+  if (likeButton) {
+    likeButton.disabled = true;
+    try {
+      await api(`/api/admin/reviews/${likeButton.dataset.reviewLike}/like`, { method: "POST" });
+      await refreshAdminReviews();
+      showToast("Review like updated.");
+    } catch (error) {
+      showToast(error.message);
+      likeButton.disabled = false;
+    }
+  } else if (deleteButton) {
+    const reviewText = deleteButton.closest(".admin-review-card").querySelector("p.whitespace-pre-wrap").textContent;
+    if (!window.confirm(`Delete this customer review?\n\n"${reviewText.slice(0, 120)}"`)) return;
+    deleteButton.disabled = true;
+    try {
+      await api(`/api/admin/reviews/${deleteButton.dataset.reviewDelete}`, { method: "DELETE" });
+      await refreshAdminReviews();
+      showToast("Review deleted.");
+    } catch (error) {
+      showToast(error.message);
+      deleteButton.disabled = false;
+    }
+  }
+});
+
+document.querySelector("#admin-reviews-list").addEventListener("submit", async (event) => {
+  const form = event.target.closest("[data-review-response]");
+  if (!form) return;
+  event.preventDefault();
+  const button = form.querySelector('button[type="submit"]');
+  button.disabled = true;
+  try {
+    await api(`/api/admin/reviews/${form.dataset.reviewResponse}/response`, {
+      method: "PUT",
+      body: JSON.stringify({ response: form.elements.response.value }),
+    });
+    await refreshAdminReviews();
+    showToast("Owner response published.");
+  } catch (error) {
+    showToast(error.message);
+    button.disabled = false;
+  }
+});
+
+document.querySelector("#refresh-reviews").addEventListener("click", () => {
+  refreshAdminReviews().then(() => showToast("Reviews refreshed.")).catch((error) => showToast(error.message));
 });
 
 document.querySelector("#logout").addEventListener("click", async () => {

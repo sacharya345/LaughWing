@@ -35,6 +35,14 @@ test("admin account creation rejects unauthenticated public signups", async () =
   });
 });
 
+test("admin session status does not expose review controls to visitors", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/admin/session/status`);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { isAdmin: false });
+  });
+});
+
 test("admin notifications require an authenticated admin session", async () => {
   await withServer(async (baseUrl) => {
     const requests = [
@@ -48,6 +56,23 @@ test("admin notifications require an authenticated admin session", async () => {
     ];
     const responses = await Promise.all(requests);
     assert.deepEqual(responses.map((response) => response.status), [401, 401, 401]);
+  });
+});
+
+test("admin review actions require an authenticated admin session", async () => {
+  await withServer(async (baseUrl) => {
+    const requests = [
+      fetch(`${baseUrl}/api/admin/reviews`),
+      fetch(`${baseUrl}/api/admin/reviews/1/like`, { method: "POST" }),
+      fetch(`${baseUrl}/api/admin/reviews/1/response`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ response: "Thanks!" }),
+      }),
+      fetch(`${baseUrl}/api/admin/reviews/1`, { method: "DELETE" }),
+    ];
+    const responses = await Promise.all(requests);
+    assert.deepEqual(responses.map((response) => response.status), [401, 401, 401, 401]);
   });
 });
 
@@ -82,7 +107,15 @@ test("public reviews are listed with their aggregate rating", async () => {
   const originalQuery = pool.query;
   pool.query = async (query) => query.includes("COUNT(*)")
     ? { rows: [{ count: 1, average: "5.00" }] }
-    : { rows: [{ id: "1", reviewer_name: "Alex", rating: 5, review_text: "Loved it!", created_at: "2025-01-01T00:00:00.000Z" }] };
+    : { rows: [{
+      id: "1",
+      reviewer_name: "Alex",
+      rating: 5,
+      review_text: "Loved it!",
+      created_at: "2025-01-01T00:00:00.000Z",
+      admin_liked: true,
+      admin_response: "Thanks for your kind words!",
+    }] };
 
   try {
     await withServer(async (baseUrl) => {
@@ -95,6 +128,8 @@ test("public reviews are listed with their aggregate rating", async () => {
           rating: 5,
           review: "Loved it!",
           createdAt: "2025-01-01T00:00:00.000Z",
+          adminLiked: true,
+          adminResponse: "Thanks for your kind words!",
         }],
         count: 1,
         average: 5,

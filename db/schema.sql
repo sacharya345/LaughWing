@@ -52,8 +52,11 @@ CREATE TABLE IF NOT EXISTS order_items (
   product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
   product_name TEXT NOT NULL,
   unit_price_cents INTEGER NOT NULL CHECK (unit_price_cents >= 0),
-  quantity INTEGER NOT NULL CHECK (quantity BETWEEN 1 AND 20)
+  quantity INTEGER NOT NULL CHECK (quantity BETWEEN 1 AND 20),
+  spice_level TEXT
 );
+
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS spice_level TEXT;
 
 CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders (created_at DESC);
 CREATE INDEX IF NOT EXISTS orders_status_idx ON orders (status);
@@ -88,8 +91,13 @@ CREATE TABLE IF NOT EXISTS customer_reviews (
     CHECK (char_length(reviewer_name) BETWEEN 1 AND 80),
   rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
   review_text TEXT NOT NULL CHECK (char_length(review_text) BETWEEN 5 AND 1000),
+  admin_liked BOOLEAN NOT NULL DEFAULT false,
+  admin_response TEXT NOT NULL DEFAULT '' CHECK (char_length(admin_response) <= 1000),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE customer_reviews ADD COLUMN IF NOT EXISTS admin_liked BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE customer_reviews ADD COLUMN IF NOT EXISTS admin_response TEXT NOT NULL DEFAULT '';
 
 CREATE INDEX IF NOT EXISTS customer_reviews_created_at_idx
   ON customer_reviews (created_at DESC, id DESC);

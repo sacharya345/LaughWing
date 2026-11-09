@@ -18,6 +18,19 @@ const PgSession = connectPgSimple(session);
 const asyncRoute = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const orderStatuses = new Set(["pending", "confirmed", "preparing", "ready", "completed", "cancelled"]);
+const spiceLevels = new Set(["Mild", "Medium", "Hot", "Extra hot"]);
+const spiceLevelProductNames = new Set([
+  "Dry Laphing",
+  "Jhol Laphing",
+  "Chicken Laphing",
+  "Chicken Keema Noodles",
+]);
+
+function validSpiceSelection(productName, spiceLevel) {
+  return spiceLevelProductNames.has(productName)
+    ? spiceLevels.has(spiceLevel)
+    : spiceLevel === null;
+}
 
 if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
   throw new Error("SESSION_SECRET must contain at least 32 characters.");
@@ -242,7 +255,7 @@ app.get("/api/menu/:id/image", asyncRoute(async (req, res) => {
 app.get("/api/reviews", asyncRoute(async (_req, res) => {
   const [reviews, summary] = await Promise.all([
     pool.query(
-      `SELECT id, reviewer_name, rating, review_text, created_at
+      `SELECT id, reviewer_name, rating, review_text, created_at, admin_liked, admin_response
        FROM customer_reviews ORDER BY created_at DESC, id DESC LIMIT 50`,
     ),
     pool.query(
@@ -256,6 +269,8 @@ app.get("/api/reviews", asyncRoute(async (_req, res) => {
       rating: review.rating,
       review: review.review_text,
       createdAt: review.created_at,
+      adminLiked: review.admin_liked,
+      adminResponse: review.admin_response,
     })),
     count: summary.rows[0].count,
     average: Number(summary.rows[0].average),
@@ -281,6 +296,69 @@ app.post("/api/reviews", reviewLimiter, asyncRoute(async (req, res) => {
       createdAt: review.created_at,
     },
   });
+}));
+
+app.get("/api/admin/reviews", requireAdmin, asyncRoute(async (_req, res) => {
+  const result = await pool.query(
+    `SELECT id, reviewer_name, rating, review_text, created_at, admin_liked, admin_response
+     FROM customer_reviews ORDER BY created_at DESC, id DESC LIMIT 50`,
+  );
+  res.json({
+    reviews: result.rows.map((review) => ({
+      id: review.id,
+      name: review.reviewer_name,
+      rating: review.rating,
+      review: review.review_text,
+      createdAt: review.created_at,
+      adminLiked: review.admin_liked,
+      adminResponse: review.admin_response,
+    })),
+  });
+}));
+
+app.post("/api/admin/reviews/:id/like", requireAdmin, requireCsrf, asyncRoute(async (req, res) => {
+  const id = req.params.id;
+  if (!/^\d{1,19}$/.test(id) || BigInt(id) < 1n || BigInt(id) > 9223372036854775807n) {
+    return res.status(400).json({ error: "Invalid review." });
+  }
+  const result = await pool.query(
+    `UPDATE customer_reviews SET admin_liked = NOT admin_liked
+     WHERE id = $1 RETURNING id, admin_liked`,
+    [id],
+  );
+  if (!result.rowCount) return res.status(404).json({ error: "Review not found." });
+  res.json({ review: { id: result.rows[0].id, adminLiked: result.rows[0].admin_liked } });
+}));
+
+app.put("/api/admin/reviews/:id/response", requireAdmin, requireCsrf, asyncRoute(async (req, res) => {
+  const id = req.params.id;
+  if (!/^\d{1,19}$/.test(id) || BigInt(id) < 1n || BigInt(id) > 9223372036854775807n) {
+    return res.status(400).json({ error: "Invalid review." });
+  }
+  if (!req.body || typeof req.body.response !== "string") {
+    return res.status(400).json({ error: "Enter a valid owner response." });
+  }
+  const response = req.body.response.trim().replace(/\r\n?/g, "\n");
+  if (response.length > 1000) {
+    return res.status(400).json({ error: "Your response must be 1,000 characters or fewer." });
+  }
+  const result = await pool.query(
+    `UPDATE customer_reviews SET admin_response = $1
+     WHERE id = $2 RETURNING id, admin_response`,
+    [response, id],
+  );
+  if (!result.rowCount) return res.status(404).json({ error: "Review not found." });
+  res.json({ review: { id: result.rows[0].id, adminResponse: result.rows[0].admin_response } });
+}));
+
+app.delete("/api/admin/reviews/:id", requireAdmin, requireCsrf, asyncRoute(async (req, res) => {
+  const id = req.params.id;
+  if (!/^\d{1,19}$/.test(id) || BigInt(id) < 1n || BigInt(id) > 9223372036854775807n) {
+    return res.status(400).json({ error: "Invalid review." });
+  }
+  const result = await pool.query("DELETE FROM customer_reviews WHERE id = $1", [id]);
+  if (!result.rowCount) return res.status(404).json({ error: "Review not found." });
+  res.status(204).end();
 }));
 
 app.post("/api/orders", orderLimiter, asyncRoute(async (req, res) => {
@@ -313,15 +391,22 @@ app.post("/api/orders", orderLimiter, asyncRoute(async (req, res) => {
   }
 
   const requestedItems = new Map();
+  const requestedQuantities = new Map();
   for (const item of items) {
     const id = item?.productId;
     const quantity = item?.quantity;
-    if (!Number.isInteger(id) || id < 1 || !Number.isInteger(quantity) || quantity < 1 || quantity > 20) {
+    const spiceLevel = item?.spiceLevel ?? null;
+    if (!Number.isInteger(id) || id < 1 || !Number.isInteger(quantity) || quantity < 1 || quantity > 20 ||
+        (spiceLevel !== null && typeof spiceLevel !== "string")) {
       return res.status(400).json({ error: "One of the selected menu items is invalid." });
     }
-    requestedItems.set(id, (requestedItems.get(id) || 0) + quantity);
+    const key = `${id}:${spiceLevel || ""}`;
+    const line = requestedItems.get(key) || { productId: id, quantity: 0, spiceLevel };
+    line.quantity += quantity;
+    requestedItems.set(key, line);
+    requestedQuantities.set(id, (requestedQuantities.get(id) || 0) + quantity);
   }
-  if ([...requestedItems.values()].some((quantity) => quantity > 20)) {
+  if ([...requestedQuantities.values()].some((quantity) => quantity > 20)) {
     return res.status(400).json({ error: "The maximum quantity for each item is 20." });
   }
 
@@ -340,17 +425,24 @@ app.post("/api/orders", orderLimiter, asyncRoute(async (req, res) => {
   const productResult = await pool.query(
     `SELECT id, name, price_cents FROM products
      WHERE id = ANY($1::int[]) AND is_available = true AND price_cents IS NOT NULL`,
-    [[...requestedItems.keys()]],
+    [[...requestedQuantities.keys()]],
   );
-  if (productResult.rows.length !== requestedItems.size) {
+  if (productResult.rows.length !== requestedQuantities.size) {
     return res.status(400).json({ error: "A selected item is no longer available. Refresh the menu and try again." });
   }
 
   const productsById = new Map(productResult.rows.map((product) => [product.id, product]));
-  const lineItems = [...requestedItems].map(([id, quantity]) => ({
-    ...productsById.get(id),
-    quantity,
-  }));
+  const lineItems = [...requestedItems.values()].map((item) => {
+    const product = productsById.get(item.productId);
+    if (!validSpiceSelection(product.name, item.spiceLevel)) {
+      throw Object.assign(new Error(
+        spiceLevelProductNames.has(product.name)
+          ? `Choose a valid spice level for ${product.name}.`
+          : `Spice level is not available for ${product.name}.`,
+      ), { status: 400 });
+    }
+    return { ...product, quantity: item.quantity, spiceLevel: item.spiceLevel };
+  });
   const subtotalCents = lineItems.reduce((sum, item) => sum + item.price_cents * item.quantity, 0);
   const deliveryFeeCents = fulfillment === "delivery" ? settings.delivery_fee_cents : 0;
   const client = await pool.connect();
@@ -380,14 +472,15 @@ app.post("/api/orders", orderLimiter, asyncRoute(async (req, res) => {
     order.items = [];
     for (const item of lineItems) {
       await client.query(
-        `INSERT INTO order_items (order_id, product_id, product_name, unit_price_cents, quantity)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [order.id, item.id, item.name, item.price_cents, item.quantity],
+        `INSERT INTO order_items (order_id, product_id, product_name, unit_price_cents, quantity, spice_level)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [order.id, item.id, item.name, item.price_cents, item.quantity, item.spiceLevel],
       );
       order.items.push({
         product_name: item.name,
         unit_price_cents: item.price_cents,
         quantity: item.quantity,
+        spice_level: item.spiceLevel,
       });
     }
     await client.query(
@@ -434,6 +527,10 @@ app.get("/api/admin/session", requireAdmin, (req, res) => {
   res.json({ email: req.session.adminEmail, csrfToken: req.session.csrfToken });
 });
 
+app.get("/api/admin/session/status", (req, res) => {
+  res.json({ isAdmin: Boolean(req.session.adminId) });
+});
+
 app.post("/api/admin/logout", requireAdmin, requireCsrf, (req, res, next) => {
   req.session.destroy((error) => {
     if (error) return next(error);
@@ -450,7 +547,7 @@ app.get("/api/admin/dashboard", requireAdmin, asyncRoute(async (_req, res) => {
               o.delivery_fee_cents, o.total_cents, o.created_at,
               COALESCE(json_agg(json_build_object(
                 'name', i.product_name, 'quantity', i.quantity,
-                'price', i.unit_price_cents / 100.0
+                'price', i.unit_price_cents / 100.0, 'spiceLevel', i.spice_level
               )) FILTER (WHERE i.id IS NOT NULL), '[]'::json) AS items
        FROM orders o
        LEFT JOIN order_items i ON i.order_id = o.id
@@ -735,7 +832,7 @@ app.post("/api/admin/orders/:id/retry-notification", requireAdmin, requireCsrf, 
             o.delivery_address, o.notes, o.total_cents,
             COALESCE(json_agg(json_build_object(
               'product_name', i.product_name, 'quantity', i.quantity,
-              'unit_price_cents', i.unit_price_cents
+              'unit_price_cents', i.unit_price_cents, 'spice_level', i.spice_level
             )) FILTER (WHERE i.id IS NOT NULL), '[]'::json) AS items
      FROM orders o LEFT JOIN order_items i ON i.order_id = o.id
      WHERE o.id = $1 GROUP BY o.id`,
@@ -832,4 +929,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, normalizeProduct, normalizeReview, detectImageType, validEmail };
+module.exports = { app, normalizeProduct, normalizeReview, detectImageType, validEmail, validSpiceSelection };

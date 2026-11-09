@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fresh laphing, chicken favorites, and ice-cold drinks from Laugh-Wing. Order pickup or delivery straight from our cloud kitchen.">
-    <meta name="theme-color" content="#1246a0">
+    <meta name="theme-color" content="#c9edfb">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Laugh-Wing | A little spice, a lot of happy">
     <meta property="og:description" content="Fresh laphing, chicken favorites, and ice-cold drinks. Order pickup or delivery from Laugh-Wing.">
@@ -29,19 +29,20 @@
       <div class="whatsapp-top-banner">
         <div class="container whatsapp-top-banner-content">
           <div class="whatsapp-top-message">
-            <strong>Hungry? We're just a message away! 😋</strong>
-            <span>Fresh from Koskela, Helsinki · Tap a number to start your order</span>
+            <span class="contact-banner-eyebrow"><span class="contact-online-dot" aria-hidden="true"></span> YOUR LOCAL KITCHEN · KOSKELA, HELSINKI</span>
+            <strong>Hungry? Let’s make it a good one.</strong>
+            <span>Place your order or ask us anything—we’re just a message away.</span>
           </div>
-          <div class="whatsapp-top-links" aria-label="Order directly on WhatsApp">
-            <a href="https://wa.me/358465833970" target="_blank" rel="noopener noreferrer"><span class="whatsapp-link-icon" aria-hidden="true">↗</span><span><small>MESSAGE US</small><strong>+358 465 833 970</strong></span></a>
-            <a href="https://wa.me/358417404315" target="_blank" rel="noopener noreferrer"><span class="whatsapp-link-icon" aria-hidden="true">↗</span><span><small>MESSAGE US</small><strong>+358 417 404 315</strong></span></a>
+          <div class="whatsapp-top-links" aria-label="Contact us on WhatsApp">
+            <a href="https://wa.me/358465833970" target="_blank" rel="noopener noreferrer"><span class="whatsapp-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M20 11.5a7.5 7.5 0 0 1-11.2 6.5L4 19l1.1-4.1A7.5 7.5 0 1 1 20 11.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.5 9.5c.6 2 2 3.4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span><small>CONTACT US</small><strong>+358 465 833 970</strong></span></a>
+            <a href="https://wa.me/358417404315" target="_blank" rel="noopener noreferrer"><span class="whatsapp-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M20 11.5a7.5 7.5 0 0 1-11.2 6.5L4 19l1.1-4.1A7.5 7.5 0 1 1 20 11.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.5 9.5c.6 2 2 3.4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span><small>CONTACT US</small><strong>+358 417 404 315</strong></span></a>
           </div>
         </div>
       </div>
       <nav class="container flex items-center justify-between gap-3 py-3" aria-label="Main navigation">
         <a class="flex items-center gap-2 text-decoration-none" href="/" aria-label="Laugh-Wing home">
           <span class="brand-mark" aria-hidden="true">LW</span>
-          <span class="text-xl font-black tracking-tight text-wing-ink">Laugh<span class="text-wing-blue">-Wing</span></span>
+          <span class="brand-wordmark" aria-hidden="true"><span>Laugh</span><span class="brand-wordmark-accent">-Wing</span><span class="brand-wordmark-flare">✦</span></span>
         </a>
         <div class="site-nav-links hidden md:flex" aria-label="Explore Laugh-Wing">
           <a class="site-nav-link" href="#menu"><span class="site-nav-index" aria-hidden="true">01</span><span>Our menu</span><span class="site-nav-arrow" aria-hidden="true">↗</span></a>
@@ -96,10 +97,9 @@
                 </div>
               </div>
             </div>
-            <div class="hero-sticker" aria-hidden="true"><span>GOOD</span><strong>MOOD</strong><span>FOOD</span></div>
+            <div class="hero-sticker" aria-hidden="true"><span>GOOD</span><strong>MOOD</strong><span>FOOD</span>            </div>
             <div class="hero-floating-note">
-              <span class="hero-note-icon" aria-hidden="true">€</span>
-              <span><small>PRICE</small><strong id="hero-item-price" class="hero-price-value">—</strong><small>per item</small></span>
+              <span><small>PRICE</small><span class="hero-price"><strong class="hero-currency" id="hero-item-currency" aria-hidden="true">€</strong><strong id="hero-item-price" class="hero-price-value">—</strong></span><small>per item</small></span>
             </div>
           </div>
         </div>
@@ -176,6 +176,10 @@
               </form>
             </div>
             <div class="col-12 col-lg-7">
+              <div class="review-list-toolbar">
+                <h3 class="mb-0 text-lg font-black">Customer reviews</h3>
+                <button class="btn btn-outline-wing rounded-pill hidden" id="clear-reviews-display" type="button">Clear All</button>
+              </div>
               <div class="review-list" id="review-list" aria-live="polite">
                 <p class="review-list-status" id="review-list-status" role="status">Loading reviews…</p>
               </div>
@@ -188,14 +192,21 @@
       <section class="bg-wing-yellow/25 py-5 md:py-12" id="story">
         <div class="container grid items-center gap-4 md:grid-cols-2">
           <div class="rounded-[2rem] bg-white p-5 shadow-sm sm:p-8">
-            <span class="text-6xl" aria-hidden="true">😋</span>
-            <p class="section-kicker mt-4 mb-2">Small kitchen. Big flavor.</p>
-            <h2 class="text-3xl font-black tracking-tight">Made with heart (and a little heat).</h2>
+            <p class="section-kicker story-card-kicker mb-2">Small kitchen. Big flavor.</p>
+            <div class="food-image-gallery story-food-gallery" data-food-gallery role="group" aria-label="Featured food"></div>
+            <h2 class="text-3xl font-black tracking-tight">Made with heart <span class="story-card-title-ending">❤️and a little heat🌶️</span></h2>
+            <p class="story-card-note mb-0 mt-3">A little comfort, a little kick, and a whole lot of happy.</p>
           </div>
           <div>
-            <p class="section-kicker mb-2">Hey, hungry human!</p>
+            <p class="section-kicker story-hey-kicker mb-2">HEY!</p>
             <h2 class="mb-3 text-3xl font-black tracking-tight">We believe good food should make you smile.</h2>
             <p class="mb-0 leading-relaxed text-wing-ink/75">Laugh-Wing brings together the slurpy comfort of laphing, the big flavor of chicken favorites, and a cold drink for the ride. We make every order fresh in our cloud kitchen, just for you.</p>
+            <div class="story-highlights" aria-label="What makes ordering easy">
+              <span><span aria-hidden="true">🌶️</span> Pick your spice</span>
+              <span><span aria-hidden="true">🍳</span> Made to order</span>
+              <span><span aria-hidden="true">🛍️</span> Pickup or delivery</span>
+            </div>
+            <a class="story-menu-link" href="#menu">Find your new favorite <span aria-hidden="true">→</span></a>
           </div>
         </div>
       </section>
@@ -204,25 +215,43 @@
         <p class="section-kicker mb-2 text-center">Easy as one, two, yum</p>
         <h2 class="mb-4 text-center text-3xl font-black tracking-tight sm:text-4xl">Your cravings called.</h2>
         <div class="row g-3 justify-content-center">
-          <div class="col-12 col-md-4"><div class="h-full rounded-4 bg-white p-4 shadow-sm"><span class="text-3xl">🍜</span><h3 class="mt-3 text-lg font-extrabold">Pick your favorites</h3><p class="mb-0 text-wing-ink/70">Add your feel-good food and drinks to your order.</p></div></div>
-          <div class="col-12 col-md-4"><div class="h-full rounded-4 bg-white p-4 shadow-sm"><span class="text-3xl">🛵</span><h3 class="mt-3 text-lg font-extrabold">Pickup or delivery</h3><p class="mb-0 text-wing-ink/70">Choose what works for you and leave us a way to reach you.</p></div></div>
-          <div class="col-12 col-md-4"><div class="h-full rounded-4 bg-white p-4 shadow-sm"><span class="text-3xl">💛</span><h3 class="mt-3 text-lg font-extrabold">We make it fresh</h3><p class="mb-0 text-wing-ink/70">We’ll get in touch to confirm your order. Then it’s time to dig in.</p></div></div>
+          <div class="col-12 col-md-4"><a class="order-step-card order-step-link h-full rounded-4 bg-white p-4 shadow-sm" href="#menu"><span class="order-step-icon text-3xl" aria-hidden="true">🍜</span><h3 class="mt-3 text-lg font-extrabold">Pick your favorites</h3><p class="mb-0 text-wing-ink/70">Add your favorite laphing and chicken dishes.</p><div class="food-image-gallery order-favorites-gallery" data-food-gallery role="group" aria-label="Featured food"></div><span class="order-step-action">Explore the menu <span aria-hidden="true">→</span></span></a></div>
+          <div class="col-12 col-md-4"><div class="order-step-card order-step-fulfillment h-full rounded-4 bg-white p-4 shadow-sm"><span class="order-step-icon text-3xl" aria-hidden="true">🛵</span><h3 class="mt-3 text-lg font-extrabold">Pickup or delivery</h3><p class="mb-3 text-wing-ink/70">Choose what works for you and leave us a way to reach you.</p><div class="quick-fulfillment-options" id="quick-fulfillment-options" role="group" aria-label="Choose pickup or delivery"><button class="quick-fulfillment-button" type="button" data-quick-fulfillment="pickup" aria-pressed="true">🏃 Pickup</button><button class="quick-fulfillment-button" type="button" data-quick-fulfillment="delivery" aria-pressed="false">🛵 Delivery</button></div><p class="quick-fulfillment-status mb-0 mt-2" id="quick-fulfillment-status" aria-live="polite">Pickup selected · free</p></div></div>
+          <div class="col-12 col-md-4"><a class="order-step-card order-step-link h-full rounded-4 bg-white p-4 shadow-sm" href="/" aria-label="We make it fresh — go to the Laugh-Wing homepage"><span class="order-step-icon text-3xl" aria-hidden="true">💛</span><h3 class="mt-3 text-lg font-extrabold">We make it fresh</h3><p class="mb-0 text-wing-ink/70">We’ll get in touch to confirm your order. Then it’s time to dig in.</p></a></div>
         </div>
       </section>
     </main>
 
-    <footer class="bg-wing-ink py-4 text-white">
-      <div class="container flex flex-wrap items-center justify-between gap-3">
-        <a class="flex items-center gap-2 text-decoration-none text-white" href="/">
-          <span class="brand-mark" aria-hidden="true">LW</span><span class="font-black">Laugh-Wing</span>
-        </a>
-        <p class="mb-0 text-sm text-white/70">Fresh food, happy hearts. Made to order.</p>
-        <div class="footer-whatsapp">
-          <a href="https://wa.me/358465833970" target="_blank" rel="noopener noreferrer">WhatsApp: +358 465 833 970</a>
-          <a href="https://wa.me/358417404315" target="_blank" rel="noopener noreferrer">+358 417 404 315</a>
-          <span>Koskela, Helsinki</span>
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-main">
+          <div class="footer-brand">
+            <a class="footer-brand-link" href="/" aria-label="Laugh-Wing home">
+              <span class="brand-mark" aria-hidden="true">LW</span>
+              <span class="brand-wordmark brand-wordmark-footer" aria-hidden="true"><span>Laugh</span><span class="brand-wordmark-accent">-Wing</span><span class="brand-wordmark-flare">✦</span></span>
+            </a>
+            <p>Good food, good mood. Fresh laphing and chicken favorites made with a little extra love.</p>
+            <a class="footer-order-cta" href="#menu">Find something delicious <span aria-hidden="true">→</span></a>
+          </div>
+          <nav class="footer-nav" aria-label="Explore the website">
+            <h2>Explore</h2>
+            <a href="#menu">Our menu</a>
+            <a href="#order">How to order</a>
+            <a href="#reviews">Customer reviews</a>
+            <a href="#story">Our story</a>
+          </nav>
+          <div class="footer-contact">
+            <h2>Say hello</h2>
+            <a href="https://wa.me/358465833970" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span> WhatsApp · +358 465 833 970</a>
+            <a href="https://wa.me/358417404315" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span> WhatsApp · +358 417 404 315</a>
+            <p><span aria-hidden="true">⌖</span> Koskela, Helsinki</p>
+          </div>
         </div>
-        <a class="text-sm font-bold text-wing-yellow no-underline hover:underline" href="/admin">Admin</a>
+        <div class="footer-bottom">
+          <span>Made fresh. Served happy. <span aria-hidden="true">♥</span></span>
+          <span>© <span id="footer-year">2026</span> Laugh-Wing</span>
+          <a href="/admin">Kitchen admin <span aria-hidden="true">↗</span></a>
+        </div>
       </div>
     </footer>
 
@@ -255,9 +284,10 @@
               <input class="form-control mt-1 rounded-xl py-2" name="phone" type="tel" autocomplete="tel" minlength="6" maxlength="30">
             </label>
           </div>
-          <label class="form-label mb-0 font-bold">Email <span class="font-normal text-wing-ink/60">(phone or email required)</span>
+          <label class="form-label mb-0 font-bold">Email <span class="font-normal text-wing-ink/60">(optional)</span>
             <input class="form-control mt-1 rounded-xl py-2" name="email" type="email" autocomplete="email" maxlength="254">
           </label>
+          <p class="mb-0 -mt-2 text-xs text-wing-ink/60">Please provide a phone number or email so we can reach you.</p>
           <fieldset>
             <legend class="mb-2 text-sm font-bold">How would you like your order?</legend>
             <div class="flex flex-wrap gap-2" id="fulfillment-options"></div>

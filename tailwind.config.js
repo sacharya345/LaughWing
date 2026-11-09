@@ -4,10 +4,10 @@ module.exports = {
     extend: {
       colors: {
         wing: {
-          blue: "#1246a0",
-          yellow: "#ffd43b",
-          cream: "#fffaf0",
-          ink: "#172033",
+          blue: "#28769d",
+          yellow: "#ffd84d",
+          cream: "#f3faff",
+          ink: "#173246",
         },
       },
     },

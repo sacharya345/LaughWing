@@ -39,6 +39,7 @@ Set `DATABASE_SSL=true` when the PostgreSQL host requires TLS. If running behind
 The starter menu uses the item prices from the supplied menu reference, formatted in euros; Chicken Sausage is €4.99. The initial delivery fee is €0.00 and can be changed under **Store settings**. Customers can order pickup or delivery, provide either a phone number or email address, and pay when the kitchen confirms the order; online card payments are not configured. Customers can also order directly through WhatsApp at +358 465 833 970 or +358 417 404 315. The kitchen is based in Koskela, Helsinki.
 
 Customers may leave a 1–5 star rating and a public review on the website. Reviews are published immediately, displayed newest first, and limited to five submissions per IP address in a 15-minute window.
+Admins can manage the latest 50 reviews in the dashboard: like or unlike them, publish a public owner response, or delete them. Admin review actions require a signed-in session and CSRF validation.
 
 ## Admin dashboard
 
@@ -46,6 +47,7 @@ Sign in at `/admin` using the initial `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.
 
 - Reviewing recent orders and updating their status
 - Receiving persistent in-dashboard order notifications, with unread counts and automatic refresh while signed in
+- Liking, responding to, and deleting customer reviews
 - Retrying failed email or SMS alerts
 - Adding, editing, enabling, disabling, and deleting menu items
 - Pausing online ordering and enabling pickup/delivery

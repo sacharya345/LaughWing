@@ -5,6 +5,14 @@ const cartBackdrop = document.querySelector("#cart-backdrop");
 const checkoutModal = document.querySelector("#checkout-modal");
 const checkoutForm = document.querySelector("#checkout-form");
 const cart = new Map();
+const selectedSpiceLevels = new Map();
+const spiceLevels = ["Mild", "Medium", "Hot", "Extra hot"];
+const spiceLevelProductNames = new Set([
+  "Dry Laphing",
+  "Jhol Laphing",
+  "Chicken Laphing",
+  "Chicken Keema Noodles",
+]);
 let products = [];
 let settings = {};
 let activeCategory = "All";
@@ -17,6 +25,7 @@ let heroAutoplayPaused = false;
 const heroImage = document.querySelector("#hero-food-image");
 const heroDots = document.querySelector("#hero-carousel-dots");
 const heroPrice = document.querySelector("#hero-item-price");
+const heroCurrency = document.querySelector("#hero-item-currency");
 
 const money = (amount) => new Intl.NumberFormat("en-IE", {
   style: "currency",
@@ -43,8 +52,16 @@ function showToast(message) {
 
 function selectedProducts() {
   return [...cart.entries()]
-    .map(([id, quantity]) => ({ product: products.find((item) => item.id === id), quantity }))
+    .map(([key, line]) => ({
+      ...line,
+      key,
+      product: products.find((item) => item.id === line.productId),
+    }))
     .filter((line) => line.product);
+}
+
+function cartLineKey(productId, spiceLevel = "") {
+  return `${productId}:${spiceLevel}`;
 }
 
 function subtotal() {
@@ -86,15 +103,16 @@ function renderMenu() {
   menuGrid.innerHTML = visibleProducts.map((product) => {
     const isOrderable = product.isAvailable && product.price !== null && settings.storeOpen &&
       (settings.pickupEnabled || settings.deliveryEnabled);
-    const isSausage = product.name === "Chicken Sausage";
     const isDryLaphing = product.name === "Dry Laphing";
+    const needsSpiceLevel = spiceLevelProductNames.has(product.name);
+    const spiceLevel = needsSpiceLevel ? selectedSpiceLevels.get(product.id) || "Mild" : "";
+    const quantity = cart.get(cartLineKey(product.id, spiceLevel))?.quantity || 0;
     const artwork = product.imageUrl
       ? `<img class="menu-photo ${productImageClass(product)}${isDryLaphing ? " product-image-dry-laphing" : ""}" src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name)}">`
       : `<span aria-hidden="true">${escapeHtml(product.emoji)}</span>`;
-    const quantity = cart.get(product.id) || 0;
     return `
       <article class="col-12 col-sm-6 col-lg-4">
-        <div class="menu-card h-full p-3">
+        <div class="menu-card h-full p-3" data-orderable="${isOrderable}">
           <div class="menu-art${isDryLaphing ? " menu-art-dry-laphing" : ""}">${artwork}</div>
           <div class="menu-heading flex items-start justify-between gap-2 pt-3">
             <div>
@@ -106,6 +124,20 @@ function renderMenu() {
             </span>
           </div>
           <p class="menu-description mb-3 min-h-[3rem] text-sm leading-relaxed text-wing-ink/70">${escapeHtml(product.description)}</p>
+          ${needsSpiceLevel ? `
+            <div class="spice-slider mb-3">
+              <div class="mb-1 flex items-center justify-between gap-2">
+                <label class="text-sm font-bold" for="spice-level-${product.id}">Spice level</label>
+                <output class="spice-slider-value" data-spice-output="${product.id}" for="spice-level-${product.id}" aria-live="polite">${escapeHtml(spiceLevel)}</output>
+              </div>
+              <input class="spice-slider-input" id="spice-level-${product.id}" type="range" min="0" max="3" step="1"
+                value="${spiceLevels.indexOf(spiceLevel)}" aria-label="Spice level for ${escapeHtml(product.name)}"
+                aria-valuetext="${escapeHtml(spiceLevel)}" data-spice-choice="${product.id}"${!isOrderable ? " disabled" : ""}>
+              <div class="spice-slider-labels" aria-hidden="true">
+                ${spiceLevels.map((level) => `<span${level === spiceLevel ? ' class="is-selected"' : ""}>${escapeHtml(level)}</span>`).join("")}
+              </div>
+            </div>
+          ` : ""}
           <div class="menu-quantity" role="group" aria-label="Quantity for ${escapeHtml(product.name)}">
             <button class="menu-quantity-button" type="button" data-menu-decrease="${product.id}" aria-label="Remove one ${escapeHtml(product.name)}"${quantity === 0 || !isOrderable ? " disabled" : ""}>−</button>
             <span class="menu-quantity-value" data-menu-quantity="${product.id}" aria-live="polite">${quantity}</span>
@@ -116,6 +148,36 @@ function renderMenu() {
       </article>
     `;
   }).join("");
+}
+
+function renderFoodGalleries() {
+  const featuredFood = ["Dry Laphing", "Chicken Keema Noodles", "Chicken Chilly"]
+    .map((name) => products.find((product) => product.name === name))
+    .filter((product) => product?.imageUrl);
+  const galleryMarkup = featuredFood.map((product) => `
+    <img class="food-gallery-image" src="${escapeHtml(product.imageUrl)}"
+      alt="${escapeHtml(product.name)}" loading="lazy">
+  `).join("");
+  document.querySelectorAll("[data-food-gallery]").forEach((gallery) => {
+    gallery.innerHTML = galleryMarkup;
+  });
+}
+
+function refreshMenuQuantities() {
+  menuGrid.querySelectorAll("[data-menu-quantity]").forEach((quantityElement) => {
+    const productId = Number(quantityElement.dataset.menuQuantity);
+    const product = products.find((item) => item.id === productId);
+    const needsSpiceLevel = spiceLevelProductNames.has(product.name);
+    const spiceLevel = needsSpiceLevel ? selectedSpiceLevels.get(productId) || "Mild" : "";
+    const quantity = cart.get(cartLineKey(productId, spiceLevel))?.quantity || 0;
+    const card = quantityElement.closest(".menu-card");
+    const canOrder = card.dataset.orderable === "true";
+    quantityElement.textContent = String(quantity);
+    card.querySelector(`[data-menu-decrease="${productId}"]`).disabled =
+      !canOrder || quantity === 0;
+    card.querySelector(`[data-menu-increase="${productId}"]`).disabled =
+      !canOrder;
+  });
 }
 
 function renderHeroSlide() {
@@ -134,7 +196,10 @@ function renderHeroSlide() {
   if (hasImage) heroImage.src = product.imageUrl;
   document.querySelector("#hero-item-category").textContent = product.category;
   document.querySelector("#hero-item-name").textContent = product.name;
-  heroPrice.textContent = product.price === null ? "Price coming soon" : money(product.price);
+  heroCurrency.hidden = product.price === null;
+  heroPrice.textContent = product.price === null
+    ? "Price coming soon"
+    : money(product.price).replace("€", "").trim();
   document.querySelector("#hero-carousel-count").textContent =
     `${String(activeHeroSlide + 1).padStart(2, "0")} / ${String(heroProducts.length).padStart(2, "0")}`;
   heroDots.querySelectorAll("button").forEach((button, index) => {
@@ -145,7 +210,7 @@ function renderHeroSlide() {
 }
 
 function renderHeroCarousel() {
-  heroProducts = products;
+  heroProducts = products.filter((product) => product.category !== "Drinks");
   if (!heroProducts.length) return;
   const featuredIndex = heroProducts.findIndex((product) => product.name === "Chicken Chilly");
   activeHeroSlide = featuredIndex >= 0 ? featuredIndex : 0;
@@ -216,6 +281,31 @@ function renderFulfillmentOptions() {
     ? "Delivery fee is included in your total below."
     : "Pickup is free.";
   updateCheckoutTotals();
+  renderQuickFulfillmentOptions();
+}
+
+function renderQuickFulfillmentOptions() {
+  const methods = [
+    { key: "pickup", enabled: settings.pickupEnabled },
+    { key: "delivery", enabled: settings.deliveryEnabled },
+  ];
+  for (const method of methods) {
+    const button = document.querySelector(`[data-quick-fulfillment="${method.key}"]`);
+    button.disabled = !method.enabled;
+    button.classList.toggle("is-selected", method.key === selectedFulfillment);
+    button.setAttribute("aria-pressed", String(method.key === selectedFulfillment));
+  }
+
+  const status = document.querySelector("#quick-fulfillment-status");
+  if (!methods.some((method) => method.enabled)) {
+    status.textContent = "Pickup and delivery aren't available right now.";
+  } else if (selectedFulfillment === "delivery") {
+    status.textContent = settings.deliveryFee
+      ? `Delivery selected · ${money(settings.deliveryFee)} fee included`
+      : "Delivery selected · fee included in total";
+  } else {
+    status.textContent = "Pickup selected · free";
+  }
 }
 
 function updateCheckoutTotals() {
@@ -241,8 +331,8 @@ function renderCart() {
     : "Continue to checkout";
 
   document.querySelector("#cart-items").innerHTML = lines.length
-    ? lines.map(({ product, quantity: count }) => `
-      <div class="cart-row flex items-center gap-3 py-3" data-cart-row="${product.id}">
+    ? lines.map(({ product, quantity: count, spiceLevel, key }) => `
+      <div class="cart-row flex items-center gap-3 py-3" data-cart-row="${escapeHtml(key)}">
         <div class="cart-item-art">
           ${product.imageUrl
     ? `<img class="cart-item-photo ${productImageClass(product)}" src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name)}">`
@@ -251,11 +341,12 @@ function renderCart() {
         <div class="min-w-0 flex-1">
           <h3 class="mb-1 truncate text-sm font-extrabold">${escapeHtml(product.name)}</h3>
           <p class="mb-0 text-sm text-wing-ink/70">${money(product.price)} each</p>
+          ${spiceLevel ? `<p class="mb-0 text-sm font-semibold text-wing-ink/70">Spice: ${escapeHtml(spiceLevel)}</p>` : ""}
         </div>
         <div class="flex items-center gap-2">
-          <button class="btn btn-outline-wing rounded-circle p-0" style="width:2rem;height:2rem" type="button" data-decrease="${product.id}" aria-label="Remove one ${escapeHtml(product.name)}">−</button>
+          <button class="btn btn-outline-wing rounded-circle p-0" style="width:2rem;height:2rem" type="button" data-decrease="${escapeHtml(key)}" aria-label="Remove one ${escapeHtml(product.name)}${spiceLevel ? ` (${escapeHtml(spiceLevel)})` : ""}">−</button>
           <span class="min-w-4 text-center text-sm font-bold">${count}</span>
-          <button class="btn btn-outline-wing rounded-circle p-0" style="width:2rem;height:2rem" type="button" data-increase="${product.id}" aria-label="Add one ${escapeHtml(product.name)}">+</button>
+          <button class="btn btn-outline-wing rounded-circle p-0" style="width:2rem;height:2rem" type="button" data-increase="${escapeHtml(key)}" aria-label="Add one ${escapeHtml(product.name)}${spiceLevel ? ` (${escapeHtml(spiceLevel)})` : ""}">+</button>
         </div>
       </div>
     `).join("")
@@ -285,6 +376,7 @@ async function loadMenu() {
   const data = await response.json();
   products = data.products;
   settings = data.settings;
+  renderFoodGalleries();
   renderHeroCarousel();
   const closedMessage = document.querySelector("#store-status");
   closedMessage.hidden = settings.storeOpen;
@@ -303,6 +395,7 @@ function renderReviews(data) {
     `${"★".repeat(Math.round(data.average))}${"☆".repeat(5 - Math.round(data.average))}`;
 
   const reviewList = document.querySelector("#review-list");
+  if (reviewsClearedForPage) return;
   if (!data.reviews.length) {
     reviewList.innerHTML = '<p class="review-list-status" id="review-list-status" role="status">No reviews yet. Be the first to share your experience!</p>';
     return;
@@ -322,6 +415,13 @@ function renderReviews(data) {
         </div>
         <div class="review-card-stars" aria-label="${escapeHtml(review.rating)} out of 5 stars">${stars}</div>
         <p class="mb-0">${escapeHtml(review.review)}</p>
+        ${review.adminLiked ? '<p class="review-admin-like mb-0" aria-label="Liked by Laugh-Wing">👍 Liked by Laugh-Wing</p>' : ""}
+        ${review.adminResponse ? `
+          <div class="review-admin-response">
+            <strong>Response from Laugh-Wing</strong>
+            <p class="mb-0">${escapeHtml(review.adminResponse)}</p>
+          </div>
+        ` : ""}
       </article>
     `;
   }).join("");
@@ -334,6 +434,29 @@ async function loadReviews() {
 }
 
 const reviewForm = document.querySelector("#review-form");
+let reviewsClearedForPage = false;
+
+async function loadAdminReviewControls() {
+  const response = await fetch("/api/admin/session/status");
+  if (!response.ok) throw new Error("Admin review controls could not be verified.");
+  const sessionStatus = await response.json();
+  if (sessionStatus.isAdmin) {
+    document.querySelector("#clear-reviews-display").classList.remove("hidden");
+  }
+}
+
+document.querySelector("#clear-reviews-display").addEventListener("click", () => {
+  reviewsClearedForPage = true;
+  document.querySelector("#review-list").innerHTML =
+    '<p class="review-list-status" role="status">Reviews are cleared from this view. Refresh the page to show them again.</p>';
+});
+
+reviewForm.addEventListener("reset", () => {
+  const status = document.querySelector("#review-form-status");
+  status.textContent = "";
+  status.classList.add("hidden");
+});
+
 reviewForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const formData = new FormData(reviewForm);
@@ -388,13 +511,47 @@ menuGrid.addEventListener("click", (event) => {
   const button = increase || decrease;
   if (!button) return;
   const id = Number(increase ? increase.dataset.menuIncrease : decrease.dataset.menuDecrease);
-  const next = (cart.get(id) || 0) + (increase ? 1 : -1);
-  if (next <= 0) cart.delete(id);
-  else cart.set(id, next);
-  const quantity = cart.get(id) || 0;
-  const card = button.closest(".menu-card");
-  card.querySelector(`[data-menu-quantity="${id}"]`).textContent = String(quantity);
-  card.querySelector(`[data-menu-decrease="${id}"]`).disabled = quantity === 0;
+  const product = products.find((item) => item.id === id);
+  if (!product) return;
+  const spiceLevel = spiceLevelProductNames.has(product.name)
+    ? selectedSpiceLevels.get(id) || "Mild"
+    : "";
+  const key = cartLineKey(id, spiceLevel);
+  const next = (cart.get(key)?.quantity || 0) + (increase ? 1 : -1);
+  if (next <= 0) cart.delete(key);
+  else cart.set(key, { productId: id, quantity: next, spiceLevel: spiceLevel || null });
+  refreshMenuQuantities();
+  renderCart();
+});
+
+menuGrid.addEventListener("input", (event) => {
+  const slider = event.target.closest("[data-spice-choice]");
+  if (!slider) return;
+  const productId = Number(slider.dataset.spiceChoice);
+  const previousSpiceLevel = selectedSpiceLevels.get(productId) || "Mild";
+  const spiceLevel = spiceLevels[Number(slider.value)];
+  if (spiceLevel !== previousSpiceLevel) {
+    const previousKey = cartLineKey(productId, previousSpiceLevel);
+    const nextKey = cartLineKey(productId, spiceLevel);
+    const previousLine = cart.get(previousKey);
+    if (previousLine) {
+      const nextLine = cart.get(nextKey);
+      cart.delete(previousKey);
+      cart.set(nextKey, {
+        ...previousLine,
+        quantity: previousLine.quantity + (nextLine?.quantity || 0),
+        spiceLevel,
+      });
+    }
+  }
+  selectedSpiceLevels.set(productId, spiceLevel);
+  slider.setAttribute("aria-valuetext", spiceLevel);
+  const card = slider.closest(".menu-card");
+  card.querySelector(`[data-spice-output="${productId}"]`).textContent = spiceLevel;
+  card.querySelector(".spice-slider-labels").querySelectorAll("span").forEach((label, index) => {
+    label.classList.toggle("is-selected", spiceLevels[index] === spiceLevel);
+  });
+  refreshMenuQuantities();
   renderCart();
 });
 
@@ -402,16 +559,18 @@ document.querySelector("#cart-items").addEventListener("click", (event) => {
   const increase = event.target.closest("[data-increase]");
   const decrease = event.target.closest("[data-decrease]");
   if (increase) {
-    const id = Number(increase.dataset.increase);
-    cart.set(id, (cart.get(id) || 0) + 1);
+    const key = increase.dataset.increase;
+    const line = cart.get(key);
+    cart.set(key, { ...line, quantity: line.quantity + 1 });
   } else if (decrease) {
-    const id = Number(decrease.dataset.decrease);
-    const next = (cart.get(id) || 0) - 1;
-    if (next <= 0) cart.delete(id);
-    else cart.set(id, next);
+    const key = decrease.dataset.decrease;
+    const line = cart.get(key);
+    if (line.quantity <= 1) cart.delete(key);
+    else cart.set(key, { ...line, quantity: line.quantity - 1 });
   } else {
     return;
   }
+  refreshMenuQuantities();
   renderCart();
 });
 
@@ -441,6 +600,15 @@ document.querySelector("#fulfillment-options").addEventListener("click", (event)
   selectedFulfillment = button.dataset.fulfillment;
   renderFulfillmentOptions();
 });
+
+document.querySelector("#quick-fulfillment-options").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-quick-fulfillment]");
+  if (!button || button.disabled) return;
+  selectedFulfillment = button.dataset.quickFulfillment;
+  renderFulfillmentOptions();
+});
+
+document.querySelector("#footer-year").textContent = String(new Date().getFullYear());
 
 checkoutForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -472,7 +640,11 @@ checkoutForm.addEventListener("submit", async (event) => {
         fulfillment: selectedFulfillment,
         address: formData.get("address"),
         notes: formData.get("notes"),
-        items: [...cart.entries()].map(([productId, quantity]) => ({ productId, quantity })),
+        items: [...cart.values()].map(({ productId, quantity, spiceLevel }) => ({
+          productId,
+          quantity,
+          ...(spiceLevel ? { spiceLevel } : {}),
+        })),
       }),
     });
     const result = await response.json();
@@ -482,6 +654,7 @@ checkoutForm.addEventListener("submit", async (event) => {
     successBox.classList.remove("hidden");
     checkoutForm.reset();
     cart.clear();
+    refreshMenuQuantities();
     renderCart();
     checkoutForm.classList.add("hidden");
     showToast("Your order is on its way to the kitchen!");
@@ -503,6 +676,10 @@ loadReviews().catch((error) => {
   document.querySelector("#review-list").innerHTML =
     `<p class="review-list-status" role="alert">${escapeHtml(error.message)}</p>`;
   document.querySelector("#review-count").textContent = "Unable to load reviews";
+});
+
+loadAdminReviewControls().catch((error) => {
+  console.warn(error.message);
 });
 
 fetch("/api/visits", { method: "POST" }).catch((error) => {
