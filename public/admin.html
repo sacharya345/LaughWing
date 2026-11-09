@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#1246a0">
+    <title>Kitchen Admin | Laugh-Wing</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/admin.js" defer></script>
+  </head>
+  <body class="admin-shell">
+    <main class="container max-w-6xl py-5">
+      <section id="login-view" class="mx-auto mt-5 max-w-md rounded-4 bg-white p-4 shadow-lg sm:p-5">
+        <a class="flex items-center gap-2 text-decoration-none" href="/">
+          <span class="brand-mark" aria-hidden="true">LW</span>
+          <span class="text-xl font-black text-wing-ink">Laugh-Wing</span>
+        </a>
+        <p class="section-kicker mt-5 mb-2">Kitchen staff only</p>
+        <h1 class="mb-2 text-3xl font-black">Welcome back.</h1>
+        <p class="mb-4 text-wing-ink/70">Sign in to manage the menu, store settings, and incoming orders.</p>
+        <form id="login-form" class="grid gap-3">
+          <label class="form-label mb-0 font-bold">Admin email
+            <input class="form-control mt-1 rounded-xl py-2" name="email" type="email" autocomplete="username" required>
+          </label>
+          <label class="form-label mb-0 font-bold">Password
+            <input class="form-control mt-1 rounded-xl py-2" name="password" type="password" autocomplete="current-password" required>
+          </label>
+          <div class="alert alert-danger mb-0 hidden" id="login-error" role="alert"></div>
+          <button class="btn btn-wing rounded-pill py-3" id="login-submit" type="submit">Sign in</button>
+        </form>
+        <a class="mt-4 inline-block text-sm font-bold text-wing-blue" href="/">← Back to Laugh-Wing</a>
+      </section>
+
+      <section id="dashboard-view" class="hidden">
+        <header class="admin-nav mb-4 rounded-4 p-4 shadow-sm sm:p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <span class="brand-mark" aria-hidden="true">LW</span>
+              <div><p class="mb-1 text-sm font-bold text-white/75">Laugh-Wing kitchen</p><h1 class="mb-0 text-2xl font-black">Admin dashboard</h1></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <a class="text-sm font-bold text-wing-yellow no-underline hover:underline" href="/">View website ↗</a>
+              <button class="btn btn-light rounded-pill px-3 py-2 text-sm font-bold" id="logout" type="button">Sign out</button>
+            </div>
+          </div>
+        </header>
+
+        <div class="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Admin sections">
+          <button class="btn btn-wing rounded-pill px-3 py-2" type="button" data-panel="orders" aria-selected="true">Orders</button>
+          <button class="btn btn-outline-wing rounded-pill px-3 py-2" type="button" data-panel="notifications" aria-selected="false">
+            Notifications <span class="cart-count ms-1 hidden" id="notification-count" aria-label="Unread notifications">0</span>
+          </button>
+          <button class="btn btn-outline-wing rounded-pill px-3 py-2" type="button" data-panel="menu" aria-selected="false">Menu</button>
+          <button class="btn btn-outline-wing rounded-pill px-3 py-2" type="button" data-panel="visitors" aria-selected="false">Visitors</button>
+          <button class="btn btn-outline-wing rounded-pill px-3 py-2" type="button" data-panel="admins" aria-selected="false">Admin accounts</button>
+          <button class="btn btn-outline-wing rounded-pill px-3 py-2" type="button" data-panel="settings" aria-selected="false">Store settings</button>
+        </div>
+
+        <section class="admin-panel" id="orders-panel" aria-labelledby="orders-heading">
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-4"><div class="admin-stat card h-full p-3"><p class="mb-1 text-sm font-bold text-wing-ink/60">Orders today</p><p class="mb-0 text-3xl font-black" id="orders-today">0</p></div></div>
+            <div class="col-12 col-sm-4"><div class="admin-stat card h-full p-3"><p class="mb-1 text-sm font-bold text-wing-ink/60">Needs attention</p><p class="mb-0 text-3xl font-black" id="orders-open">0</p></div></div>
+            <div class="col-12 col-sm-4"><div class="admin-stat card h-full p-3"><p class="mb-1 text-sm font-bold text-wing-ink/60">Available menu items</p><p class="mb-0 text-3xl font-black" id="products-available">0</p></div></div>
+          </div>
+          <div class="card overflow-hidden rounded-4 border-0 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-bottom p-3 sm:p-4">
+              <div><p class="section-kicker mb-1">Fresh from the kitchen</p><h2 class="mb-0 text-xl font-black" id="orders-heading">Recent orders</h2></div>
+              <button class="btn btn-outline-wing rounded-pill px-3 py-2 text-sm" id="refresh-dashboard" type="button">Refresh</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="table mb-0 align-middle">
+                <thead class="table-light"><tr><th>Order</th><th>Customer</th><th>Items</th><th>Fulfilment</th><th>Total</th><th>Status</th><th>Alert</th></tr></thead>
+                <tbody id="orders-table"><tr><td class="p-4 text-wing-ink/60" colspan="7">Loading orders…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-panel hidden" id="notifications-panel" aria-labelledby="notifications-heading">
+          <div class="card overflow-hidden rounded-4 border-0 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-bottom p-3 sm:p-4">
+              <div>
+                <p class="section-kicker mb-1">New customer orders</p>
+                <h2 class="mb-0 text-xl font-black" id="notifications-heading">Order notifications</h2>
+                <p class="mb-0 mt-1 text-sm text-wing-ink/60">New orders appear here automatically while you’re signed in.</p>
+              </div>
+              <button class="btn btn-outline-wing rounded-pill px-3 py-2 text-sm" id="mark-all-notifications-read" type="button">Mark all as read</button>
+            </div>
+            <div class="grid gap-3 p-3 sm:p-4" id="notifications-list" aria-live="polite">
+              <p class="mb-0 py-4 text-center text-wing-ink/60">Loading notifications…</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-panel hidden" id="menu-panel">
+          <div class="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.8fr)]">
+            <div class="card overflow-hidden rounded-4 border-0 shadow-sm">
+              <div class="border-bottom p-3 sm:p-4"><p class="section-kicker mb-1">What’s cooking?</p><h2 class="mb-0 text-xl font-black">Your menu items</h2></div>
+              <div class="overflow-x-auto">
+                <table class="table mb-0 align-middle">
+                  <thead class="table-light"><tr><th>Photo &amp; item</th><th>Category</th><th>Price</th><th>Availability</th><th>Actions</th></tr></thead>
+                  <tbody id="products-table"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card rounded-4 border-0 p-3 shadow-sm sm:p-4">
+              <p class="section-kicker mb-1">Add a dish or tweak a favorite</p>
+              <h2 class="mb-3 text-xl font-black" id="product-form-title">Add a menu item</h2>
+              <form id="product-form" class="grid gap-3">
+                <label class="form-label mb-0 font-bold">Name
+                  <input class="form-control mt-1 rounded-xl" name="name" maxlength="80" required>
+                </label>
+                <label class="form-label mb-0 font-bold">Category
+                  <select class="form-select mt-1 rounded-xl" name="category" required>
+                    <option value="Laphing">Laphing</option><option value="Chicken">Chicken</option><option value="Drinks">Drinks</option>
+                  </select>
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                  <label class="form-label mb-0 font-bold">Price in EUR (€)
+                    <input class="form-control mt-1 rounded-xl" name="price" type="number" min="0" max="99999" step="0.01" placeholder="4.99">
+                  </label>
+                  <label class="form-label mb-0 font-bold">Emoji
+                    <input class="form-control mt-1 rounded-xl" name="emoji" maxlength="8" value="🍽️" required>
+                  </label>
+                </div>
+                <label class="form-label mb-0 font-bold">Short description
+                  <textarea class="form-control mt-1 rounded-xl" name="description" rows="2" maxlength="240"></textarea>
+                </label>
+                <label class="form-label mb-0 font-bold">Menu photo
+                  <input class="form-control mt-1 rounded-xl" name="image" type="file" accept="image/jpeg,image/png,image/webp">
+                  <span class="mt-1 block text-xs font-normal text-wing-ink/60">JPEG, PNG, or WebP. Maximum 5 MB.</span>
+                </label>
+                <div class="hidden rounded-xl bg-wing-cream p-2" id="product-image-preview-wrap">
+                  <img class="hidden max-h-40 w-full rounded-lg object-cover" id="product-image-preview" alt="Menu item preview">
+                  <p class="hidden mb-0 p-3 text-center text-5xl" id="product-image-placeholder" aria-hidden="true"></p>
+                  <button class="btn btn-link btn-sm mt-1 p-0 text-danger" id="product-image-remove" type="button">Remove current photo</button>
+                </div>
+                <label class="flex items-center gap-2 text-sm font-bold">
+                  <input class="form-check-input m-0" name="isAvailable" type="checkbox" checked>
+                  Available to order
+                </label>
+                <div class="flex gap-2">
+                  <button class="btn btn-wing flex-1 rounded-pill py-2" id="product-submit" type="submit">Add to menu</button>
+                  <button class="btn btn-outline-wing hidden rounded-pill px-3 py-2" id="product-cancel" type="button">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-panel hidden" id="visitors-panel" aria-labelledby="visitors-heading">
+          <div class="mb-4 grid gap-3 sm:grid-cols-2">
+            <div class="admin-stat card p-4"><p class="mb-1 text-sm font-bold text-wing-ink/60">Page visits today</p><p class="mb-0 text-3xl font-black" id="visits-today">0</p></div>
+            <div class="admin-stat card p-4"><p class="mb-1 text-sm font-bold text-wing-ink/60">Page visits, all time</p><p class="mb-0 text-3xl font-black" id="visits-all-time">0</p></div>
+          </div>
+          <div class="card overflow-hidden rounded-4 border-0 shadow-sm">
+            <div class="border-bottom p-3 sm:p-4">
+              <p class="section-kicker mb-1">Privacy-friendly activity</p>
+              <h2 class="mb-1 text-xl font-black" id="visitors-heading">Recent page visits</h2>
+              <p class="mb-0 text-sm text-wing-ink/60">These are anonymous page views, not identified people or unique visitors. The analytics table stores no visitor email, phone number, IP address, or tracking cookie.</p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="table mb-0 align-middle">
+                <thead class="table-light"><tr><th>Visited</th><th>Page</th></tr></thead>
+                <tbody id="visits-table"></tbody>
+              </table>
+            </div>
+            <div class="border-top p-3 text-center">
+              <button class="btn btn-outline-wing rounded-pill px-4 py-2" id="load-more-visits" type="button">Load older visits</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-panel hidden" id="admins-panel" aria-labelledby="admins-heading">
+          <div class="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.8fr)]">
+            <div class="card overflow-hidden rounded-4 border-0 shadow-sm">
+              <div class="border-bottom p-3 sm:p-4">
+                <p class="section-kicker mb-1">Owner-managed access</p>
+                <h2 class="mb-0 text-xl font-black" id="admins-heading">Admin accounts</h2>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="table mb-0 align-middle">
+                  <thead class="table-light"><tr><th>Email</th><th>Added</th></tr></thead>
+                  <tbody id="admins-table"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card rounded-4 border-0 p-3 shadow-sm sm:p-4">
+              <p class="section-kicker mb-1">Create an admin account</p>
+              <h2 class="mb-3 text-xl font-black">Add trusted staff</h2>
+              <form id="admin-create-form" class="grid gap-3">
+                <label class="form-label mb-0 font-bold">Admin email
+                  <input class="form-control mt-1 rounded-xl" name="email" type="email" maxlength="254" autocomplete="off" required>
+                </label>
+                <label class="form-label mb-0 font-bold">Password
+                  <input class="form-control mt-1 rounded-xl" name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+                  <span class="mt-1 block text-xs font-normal text-wing-ink/60">Use at least 12 characters. Share it securely.</span>
+                </label>
+                <button class="btn btn-wing rounded-pill py-2" type="submit">Create admin account</button>
+              </form>
+              <p class="mb-0 mt-3 text-xs leading-relaxed text-wing-ink/60">Admin accounts can view customer orders and manage the entire website. Only add people you trust. Public signup is disabled.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-panel hidden" id="settings-panel">
+          <div class="card mx-auto max-w-2xl rounded-4 border-0 p-4 shadow-sm sm:p-5">
+            <p class="section-kicker mb-1">The kitchen's open… or is it?</p>
+            <h2 class="mb-4 text-2xl font-black">Store settings</h2>
+            <form id="settings-form" class="grid gap-4">
+              <label class="flex items-center justify-between gap-3 rounded-xl bg-wing-cream p-3">
+                <span><span class="block font-extrabold">Accept online orders</span><span class="text-sm text-wing-ink/60">Pause orders when the kitchen is closed.</span></span>
+                <input class="form-check-input m-0" name="storeOpen" type="checkbox">
+              </label>
+              <label class="flex items-center justify-between gap-3 rounded-xl bg-wing-cream p-3">
+                <span><span class="block font-extrabold">Pickup orders</span><span class="text-sm text-wing-ink/60">Let customers collect their order.</span></span>
+                <input class="form-check-input m-0" name="pickupEnabled" type="checkbox">
+              </label>
+              <label class="flex items-center justify-between gap-3 rounded-xl bg-wing-cream p-3">
+                <span><span class="block font-extrabold">Delivery orders</span><span class="text-sm text-wing-ink/60">Let customers choose delivery.</span></span>
+                <input class="form-check-input m-0" name="deliveryEnabled" type="checkbox">
+              </label>
+              <label class="form-label mb-0 max-w-xs font-bold">Delivery fee (EUR)
+                <input class="form-control mt-1 rounded-xl" name="deliveryFee" type="number" min="0" max="99999" step="0.01" required>
+              </label>
+              <p class="mb-0 text-sm text-wing-ink/60">Order notifications are configured in the server’s environment variables. Delivery alerts are shown in the Orders tab, and failed alerts can be retried.</p>
+              <button class="btn btn-wing rounded-pill py-3" type="submit">Save settings</button>
+            </form>
+          </div>
+        </section>
+      </section>
+    </main>
+    <div class="toast-message hidden rounded-xl bg-wing-ink px-4 py-3 text-sm font-semibold text-white shadow-xl" id="admin-toast" role="status"></div>
+  </body>
+</html>
