@@ -12,3 +12,6 @@ npm-debug.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+#DB
+ DATABASE_URL=postgresql://postgres:0407@localhost:5432/laughwing
