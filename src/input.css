@@ -920,12 +920,13 @@ a {
 }
 
 .menu-photo.product-image-laphing {
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
+  transform: none;
 }
 
 .product-image-laphing {
-  transform: rotate(180deg);
+  transform: none;
 }
 
 .product-image-chilly {
